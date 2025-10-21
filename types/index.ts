@@ -1,17 +1,23 @@
 export interface User {
   id: number;
   name: string | null;
+  nationalId?: string | null;
+  contact?: string | null;
+  gender?: string | null;
+  cardUrl?: string | null;
   email: string;
   roleId: number;
   role: Role;
   omcId?: number;
   stationId?: number;
   createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
 }
 
 export interface Role {
   id: number;
-  name: 'DRIVER' | 'FUEL_ATTENDANT' | 'ADMIN';
+  name: 'DRIVER' | 'FUEL_ATTENDANT' | 'ADMIN' | 'OMC_ADMIN';
 }
 
 export interface Transaction {
