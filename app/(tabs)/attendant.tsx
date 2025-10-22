@@ -1,4 +1,5 @@
 import { Transaction } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import { List, Provider } from '@ant-design/react-native';
 import { useEffect, useState } from 'react';
 import { Button, FlatList, Text, TextInput, View } from 'react-native';
@@ -7,21 +8,32 @@ import { getAttendantSales, sellFuel } from '../../api/attendant';
 export default function AttendantDashboard() {
   const [sales, setSales] = useState<Transaction[]>([]);
   const [token, setToken] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user?.id) return;
     const fetchSales = async () => {
-      const data = await getAttendantSales(1); // Replace with actual attendantId
-      setSales(data);
+      try {
+        const data = await getAttendantSales(user.id);
+        setSales(data);
+      } catch (e) {
+        console.log('getAttendantSales failed', e);
+      }
     };
     fetchSales();
-  }, []);
+  }, [user?.id]);
 
   const handleSellFuel = async () => {
-    await sellFuel(token);
-    setToken('');
-    // Refresh sales
-    const updatedSales = await getAttendantSales(1);
-    setSales(updatedSales);
+    try {
+      await sellFuel(token);
+      setToken('');
+      if (user?.id) {
+        const updatedSales = await getAttendantSales(user.id);
+        setSales(updatedSales);
+      }
+    } catch (e) {
+      console.log('sellFuel failed', e);
+    }
   };
 
   return (

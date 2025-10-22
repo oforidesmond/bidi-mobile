@@ -11,13 +11,14 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const inAuthGroup = segments[0] === '(tabs)';
+    const inTabsGroup = segments[0] === '(tabs)';
+    const inLogin = segments[0] === 'login';
 
-    if (!user && inAuthGroup) {
-      // User is not authenticated but trying to access protected routes
+    if (!user && !inLogin) {
+      // User is not authenticated - redirect to login immediately
       router.replace('/login');
-    } else if (user && !inAuthGroup) {
-      // User is authenticated but on login page
+    } else if (user && !inTabsGroup) {
+      // User is authenticated but on login page - redirect to appropriate dashboard
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);

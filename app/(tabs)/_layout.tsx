@@ -42,6 +42,12 @@ export default function TabsLayout() {
           tabBarIcon: () => <Text>👤</Text>,
         }}
       />
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null, // Hide the index tab completely
+        }}
+      />
     </Tabs>
   );
 }

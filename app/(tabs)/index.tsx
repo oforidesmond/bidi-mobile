@@ -4,13 +4,18 @@ import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 
 export default function HomeScreen() {
-  const { role, loading } = useAuth();
+  const { user, role, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
 
-    // Redirect based on role
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    // Redirect based on role - stay within tabs to avoid loops
     switch (role) {
       case 'DRIVER':
         router.replace('/(tabs)/driver');
@@ -23,25 +28,16 @@ export default function HomeScreen() {
         router.replace('/(tabs)/explore');
         break;
       default:
-        // If no role or unknown role, stay on this page
+        // Fallback: show profile within tabs instead of bouncing to login
+        router.replace('/(tabs)/profile');
         break;
     }
-  }, [role, loading]);
+  }, [user, role, loading]);
 
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
+  // This page should never be visible as users are immediately redirected
   return (
-    <View className="flex-1 justify-center items-center p-4">
-      <Text className="text-2xl mb-4">Welcome to Bidi Mobile</Text>
-      <Text className="text-center">
-        Redirecting you to your dashboard based on your role...
-      </Text>
+    <View className="flex-1 justify-center items-center">
+      <Text>Redirecting...</Text>
     </View>
   );
 }
