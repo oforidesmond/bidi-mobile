@@ -1,13 +1,23 @@
 import api from './index';
 
 //Consumed by app/(tabs)/driver.tsx
-export const buyFuelToken = async (data: { productId: number; liters: number; amount: number; mobileNumber: string }) => {
-  const response = await api.post('/transactions', data);
+export const buyFuelToken = async (data: { amount: number; mobileNumber: string }) => {
+  const response = await api.post('/user/buy-token', data);
   return response.data;
 };
 
 //Consumed by app/(tabs)/driver.tsx
-export const getDriverTransactions = async (driverId: number) => {
-  const response = await api.get(`/transactions?driverId=${driverId}`);
+export const getDriverTransactions = async (status?: 'USED' | 'UNUSED') => {
+  const response = await api.get('/user/driver-tokens', {
+    params: status ? { status } : {},
+  });
+  return response.data;
+};
+
+// Fetch driver's mobile number to prefill the form
+export const getDriverMobileNumber = async (userId: number) => {
+  const response = await api.get('/user/driver-mobile-number', {
+    params: { userId },
+  });
   return response.data;
 };

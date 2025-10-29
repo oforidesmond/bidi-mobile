@@ -5,6 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+    "assets": [
+      "./assets/images/"
+    ],
     "scheme": "bidimobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

@@ -1,66 +1,145 @@
-import { Transaction } from '@/types';
+// app/driver/index.tsx
 import { useAuth } from '@/context/AuthContext';
-import { List, Provider } from '@ant-design/react-native';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Button, FlatList, Text, View } from 'react-native';
-import { buyFuelToken, getDriverTransactions } from '../../api/driver';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Button,
+  Card,
+  HelperText,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
+import { buyFuelToken, getDriverMobileNumber } from '../../api/driver';
 
-export default function DriverDashboard() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+export default function BuyFuelTokenScreen() {
+  const [amount, setAmount] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const { user } = useAuth();
+  const theme = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
     if (!user?.id) return;
-    const fetchTransactions = async () => {
+    const fetchMobile = async () => {
       try {
-        const data = await getDriverTransactions(user.id);
-        setTransactions(data);
+        const number = await getDriverMobileNumber(user.id);
+        if (number) setMobileNumber(String(number));
       } catch (e) {
-        console.log('getDriverTransactions failed', e);
+        console.log('getDriverMobileNumber failed', e);
       }
     };
-    fetchTransactions();
+    fetchMobile();
   }, [user?.id]);
 
-  const handleBuyToken = async () => {
+  const isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) > 0;
+  const isValidMobile = mobileNumber.length >= 10;
+
+  const handleBuy = async () => {
+    if (!isValidAmount || !isValidMobile) {
+      Alert.alert('Invalid Input', 'Please check amount and mobile number');
+      return;
+    }
+
+    setLoading(true);
     try {
       await buyFuelToken({
-        productId: 1,
-        liters: 10,
-        amount: 100,
-        mobileNumber: '1234567890',
+        amount: Number(amount),
+        mobileNumber,
       });
-      if (user?.id) {
-        const updated = await getDriverTransactions(user.id);
-        setTransactions(updated);
-      }
-    } catch (e) {
-      console.log('buyFuelToken failed', e);
+      Alert.alert('Success', 'Fuel token purchased successfully!');
+      setAmount('');
+      router.push('/tokens');
+    } catch (e: any) {
+      Alert.alert('Failed', e.response?.data?.message || 'Purchase failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Provider>
-      <View className="flex-1 p-4">
-        <Text className="text-2xl mb-4">Driver Dashboard</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+        <View style={{ padding: 24, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+          <Text variant="headlineMedium" style={{ fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+            Buy Fuel Token
+          </Text>
+          <Text variant="bodyMedium" style={{ textAlign: 'center', color: theme.colors.secondary, marginBottom: 32 }}>
+            Enter amount and mobile number to purchase
+          </Text>
 
-        <Button title="Buy Fuel Token" onPress={handleBuyToken} />
+          <Card elevation={3} style={{ borderRadius: 16 }}>
+            <Card.Content style={{ padding: 20 }}>
+              <TextInput
+                label="Amount (GHS)"
+                mode="outlined"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
+                left={<TextInput.Affix text="GHS" />}
+                error={!isValidAmount && amount !== ''}
+                style={{ marginBottom: 12 }}
+                theme={{ roundness: 12 }}
+              />
+              <HelperText type="error" visible={!isValidAmount && amount !== ''}>
+                Enter a valid amount
+              </HelperText>
 
-        <Text className="text-lg mt-4">Your Tokens</Text>
+              <TextInput
+                label="Mobile Number"
+                mode="outlined"
+                value={mobileNumber}
+                onChangeText={setMobileNumber}
+                keyboardType="phone-pad"
+                left={<TextInput.Icon icon="phone" />}
+                error={!isValidMobile && mobileNumber !== ''}
+                style={{ marginBottom: 16 }}
+                theme={{ roundness: 12 }}
+              />
+              <HelperText type="error" visible={!isValidMobile && mobileNumber !== ''}>
+                Enter a valid mobile number
+              </HelperText>
 
-        <FlatList
-          data={transactions}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <List.Item>
-              <Text>
-                Token: {item.token} | {item.liters}L | {item.amount} |{' '}
-                {item.deletedAt ? 'Used' : 'Unused'}
-              </Text>
-            </List.Item>
-          )}
-        />
-      </View>
-    </Provider>
+              <Button
+                mode="contained"
+                onPress={handleBuy}
+                disabled={loading || !isValidAmount || !isValidMobile}
+                loading={loading}
+                contentStyle={{ height: 54 }}
+                labelStyle={{ fontSize: 16, fontWeight: '600' }}
+                style={{ borderRadius: 12 }}
+              >
+                {loading ? 'Processing...' : 'Buy Token'}
+              </Button>
+            </Card.Content>
+          </Card>
+
+          <Text variant="bodySmall" style={{ textAlign: 'center', marginTop: 24, color: theme.colors.outline }}>
+            Secured by Bidi • Instant delivery via SMS
+          </Text>
+        </View>
+      </ScrollView>
+
+      {loading && (
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          pointerEvents="none"
+        >
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 }

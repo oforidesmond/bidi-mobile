@@ -1,6 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export default function TabsLayout() {
   const { role } = useAuth();
@@ -10,30 +11,53 @@ export default function TabsLayout() {
   const canAccessAdmin = role === 'ADMIN' || role === 'OMC_ADMIN';
 
   return (
-    <Tabs>
+     <Tabs
+     initialRouteName="index"
+      screenOptions={{
+        tabBarActiveTintColor: '#1976d2',
+        // tabBarInactiveTintColor: '#bbb',
+        tabBarStyle: {
+        backgroundColor: '#e3e3e4ff',
+        borderTopColor: '#ccc',
+        borderTopWidth: 1,
+        // height: 60,
+      },
+        tabBarLabelStyle: { fontWeight: '600' },
+        headerShown: false,
+      }}
+    >
       <Tabs.Screen
         name="driver"
         options={{
-          title: 'Driver Dashboard',
-          tabBarIcon: () => <Text>🚗</Text>,
-          href: canAccessDriver ? '/driver' : null,
+          title: 'Buy Token',
+          tabBarIcon: ({ color }) => <MaterialIcons name="local-gas-station" size={24} color={color} />,
         }}
+        // Only show if driver
+        redirect={!canAccessDriver}
+      />
+           <Tabs.Screen
+        name="tokens"
+        options={{
+          title: 'My Tokens',
+          tabBarIcon: ({ color }) => <MaterialIcons name="confirmation-number" size={24} color={color} />,
+        }}
+        redirect={!canAccessDriver}
       />
       <Tabs.Screen
         name="attendant"
         options={{
           title: 'Attendant Dashboard',
           tabBarIcon: () => <Text>⛽</Text>,
-          href: canAccessAttendant ? '/attendant' : null,
         }}
+        redirect={!canAccessAttendant}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
           tabBarIcon: () => <Text>🔍</Text>,
-          href: canAccessAdmin ? '/explore' : null,
         }}
+        redirect={!canAccessAdmin}
       />
       <Tabs.Screen
         name="profile"
