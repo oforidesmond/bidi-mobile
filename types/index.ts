@@ -17,7 +17,7 @@ export interface User {
 
 export interface Role {
   id: number;
-  name: 'DRIVER' | 'FUEL_ATTENDANT' | 'ADMIN' | 'OMC_ADMIN';
+  name: 'DRIVER' | 'PUMP_ATTENDANT' | 'ADMIN' | 'OMC_ADMIN';
 }
 
 export interface Transaction {

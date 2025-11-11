@@ -20,8 +20,8 @@ export default function HomeScreen() {
       case 'DRIVER':
         router.replace('/(tabs)/driver');
         break;
-      case 'FUEL_ATTENDANT':
-        router.replace('/(tabs)/attendant');
+      case 'PUMP_ATTENDANT':
+        router.replace('/(tabs)/sell' as any);
         break;
       case 'ADMIN':
       case 'OMC_ADMIN':
@@ -41,3 +41,4 @@ export default function HomeScreen() {
     </View>
   );
 }
+

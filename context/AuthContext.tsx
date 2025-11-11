@@ -3,7 +3,7 @@ import type { User } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-export type RoleName = 'DRIVER' | 'FUEL_ATTENDANT' | 'ADMIN' | 'OMC_ADMIN' | null;
+export type RoleName = 'DRIVER' | 'PUMP_ATTENDANT' | 'ADMIN' | 'OMC_ADMIN' | null;
 
 interface AuthState {
   user: User | null;

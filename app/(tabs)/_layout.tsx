@@ -7,7 +7,7 @@ export default function TabsLayout() {
   const { role } = useAuth();
 
   const canAccessDriver = role === 'DRIVER' || role === 'ADMIN';
-  const canAccessAttendant = role === 'FUEL_ATTENDANT' || role === 'ADMIN';
+  const canAccessAttendant = role === 'PUMP_ATTENDANT' || role === 'ADMIN';
   const canAccessAdmin = role === 'ADMIN' || role === 'OMC_ADMIN';
 
   return (
@@ -44,10 +44,18 @@ export default function TabsLayout() {
         redirect={!canAccessDriver}
       />
       <Tabs.Screen
-        name="attendant"
+        name="sell"
         options={{
-          title: 'Attendant Dashboard',
-          tabBarIcon: () => <Text>⛽</Text>,
+          title: 'Sell Fuel',
+          tabBarIcon: ({ color }) => <MaterialIcons name="point-of-sale" size={24} color={color} />,
+        }}
+        redirect={!canAccessAttendant}
+      />
+      <Tabs.Screen
+        name="sales"
+        options={{
+          title: 'Sales',
+          tabBarIcon: ({ color }) => <MaterialIcons name="receipt-long" size={24} color={color} />,
         }}
         redirect={!canAccessAttendant}
       />
