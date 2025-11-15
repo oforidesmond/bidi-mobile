@@ -22,17 +22,23 @@ export interface Role {
 
 export interface Transaction {
   id: number;
-  mobileNumber: string;
-  productId: number;
-  product: Product;
-  liters: number;
-  amount: number;
-  pumpAttendantId: number;
-  stationId: number;
+  // New schema fields
+  productCatalog?: { id: number; name: string; defaultPrice?: number };
+  station?: { id: number; name: string };
+  pumpAttendant?: { id: number; name: string; contact?: string | null };
+  pump?: { id: number; pumpNumber: number | string };
+  liters?: number | null;
+  amount?: number | null;
   driverId?: number;
   token?: string;
   createdAt: string;
   deletedAt?: string;
+  // Legacy fields (kept optional for compatibility)
+  mobileNumber?: string;
+  productId?: number;
+  product?: Product;
+  pumpAttendantId?: number;
+  stationId?: number;
 }
 
 export interface Product {

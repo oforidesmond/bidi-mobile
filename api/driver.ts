@@ -1,8 +1,8 @@
 import api from './index';
 
 //Consumed by app/(tabs)/driver.tsx
-export const buyFuelToken = async (data: { amount: number; mobileNumber: string }) => {
-  const response = await api.post('/user/buy-token', data);
+export const buyFuelToken = async (data: { amount: number }) => {
+  const response = await api.post('/user/buy-token', { amount: data.amount });
   return response.data;
 };
 

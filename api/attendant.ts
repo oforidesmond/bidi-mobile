@@ -3,7 +3,7 @@ import api from './index';
 export const sellFuel = async (
   token: string,
   data: {
-    productId?: number;
+    productCatalogId?: number;
     pumpId: number;
     dispenserId: number;
     stationId: number;
@@ -25,8 +25,15 @@ export const getTokenDetails = async (token: string) => {
   return response.data;
 };
 
-export const getAvailableProducts = async (attendantId: number) => {
-  const response = await api.get('/user/available-products', { params: { attendantId } });
+export const searchTokens = async (q: string): Promise<string[]> => {
+  const response = await api.get('/transactions/tokens/search', {
+    params: { q: (q || '').toUpperCase() },
+  });
+  return (response.data || []).map((t: { token: string }) => t.token);
+};
+
+export const getAvailableProducts = async () => {
+  const response = await api.get('/user/available-products');
   return response.data;
 };
 
@@ -36,6 +43,6 @@ export const calculateLiters = async (token: string, product: string) => {
 };
 
 export const getProducts = async () => {
-  const response = await api.get('/user/attendant-products');
+  const response = await api.get('/user/products');
   return response.data;
 };

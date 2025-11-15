@@ -3,7 +3,7 @@ import axios from 'axios';
 let __reqId = 0; // Unique request counter
 
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.96.72:3000',
+  baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.247.72:3000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -37,6 +37,7 @@ api.interceptors.response.use(
       params: cfg.params,
       data: cfg.data,
       status: res.status,
+      responseData: res.data,
       durationMs: duration,
     });
 

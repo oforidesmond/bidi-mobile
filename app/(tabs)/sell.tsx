@@ -1,9 +1,9 @@
-import { calculateLiters, getAvailableProducts, getProducts, getTokenDetails, sellFuel } from '@/api/attendant';
+import { calculateLiters, getAvailableProducts, getProducts, getTokenDetails, searchTokens, sellFuel } from '@/api/attendant';
 import { useAuth } from '@/context/AuthContext';
 import { Transaction } from '@/types';
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Modal, Platform, TouchableOpacity, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Divider, HelperText, IconButton, List, Modal as PaperModal, Portal, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 // Scanner is loaded dynamically to avoid blocking the route if the native module isn't installed yet
 
@@ -29,6 +29,11 @@ export default function SellFuelScreen() {
   const [snackbar, setSnackbar] = useState('');
   const [liters, setLiters] = useState<number | null>(null);
   const calcTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<any>(null);
+  
 
   const handlePaste = async () => {
     const text = await Clipboard.getStringAsync();
@@ -54,16 +59,16 @@ useEffect(() => {
     if (!user?.id) return;
     try {
       const [avail, prods] = await Promise.all([
-        getAvailableProducts(user.id),
+        getAvailableProducts(),
         getProducts(), // Now returns OMC products
       ]);
 
       setStationId(avail?.station?.id ?? null);
       setDispensers(avail?.station?.dispensers ?? []);
 
-      // Use OMC products
-      const list = Array.isArray(prods)
-        ? prods.map((p: any) => ({ id: p.id, name: p.name }))
+      // Use station-specific products only (must have station price)
+      const list = Array.isArray(avail?.station?.products)
+        ? avail.station.products.map((p: any) => ({ id: p.id, name: p.name }))
         : [];
 
       setProductOptions(list);
@@ -113,16 +118,40 @@ useEffect(() => {
   };
 
   // auto-calc when both token and product are set
-  useEffect(() => {
-    if (!selectedProduct || !tokenInput.trim()) return;
-    if (calcTimer.current) clearTimeout(calcTimer.current);
-    calcTimer.current = setTimeout(() => {
-      handleCalculate();
-    }, 350);
-    return () => {
-      if (calcTimer.current) clearTimeout(calcTimer.current);
-    };
-  }, [selectedProduct, tokenInput]);
+ useEffect(() => {
+  const q = tokenInput.trim();
+  if (!q) {
+    setSearchResults([]);
+    setShowDropdown(false);
+    return;
+  }
+
+  // Show box but don't query until 2+ chars
+  if (q.length < 2) {
+    setSearchResults([]);
+    setShowDropdown(true);
+    return;
+  }
+
+  if (searchDebounce.current) clearTimeout(searchDebounce.current);
+
+  searchDebounce.current = setTimeout(async () => {
+    try {
+      const results = await searchTokens(q);
+      setSearchResults(results);
+      console.log('results', results.length, results?.[0])
+      setShowDropdown(true);
+    } catch (e) {
+      console.warn('Token search error', e);
+      setSearchResults([]);
+      setShowDropdown(true);
+    }
+  }, 300); // 300 ms debounce
+
+  return () => {
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+  };
+}, [tokenInput]);
 
   const handleComplete = async () => {
     if (!fetched || !tokenInput.trim()) return;
@@ -141,7 +170,7 @@ useEffect(() => {
         stationId: stationId!,
         dispenserId: selectedPump.dispenserId,
         pumpId: selectedPump.id,
-        productId: selectedProductId,
+        productCatalogId: selectedProductId,
       });
       setSnackbar('Transaction complete. Token marked as used.');
       setFetched({ ...fetched, deletedAt: new Date().toISOString() });
@@ -165,7 +194,7 @@ useEffect(() => {
       pumpNumber: p.pumpNumber,
       dispenserId: (d as any).id,
       dispenserNumber: (d as any).dispenserNumber,
-      product: (p as any).product,
+      product: (p as any).productCatalog?.name || (p as any).product,
     })));
     if (!selectedProduct) return all;
     return all.filter((p) => (p as any).product === selectedProduct);
@@ -173,26 +202,76 @@ useEffect(() => {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <View style={{ padding: 16, marginTop: 24 }}>
+      <ScrollView
+  style={{ flex: 1, backgroundColor: theme.colors.background }}
+  contentContainerStyle={{ padding: 16, marginTop: 54, paddingBottom: 80 }}
+  showsVerticalScrollIndicator={false}
+  keyboardShouldPersistTaps="handled"
+>
         <Text variant="headlineSmall" style={{ fontWeight: '700', marginBottom: 16 }}>Sell Fuel</Text>
 
         <Card style={{ borderRadius: 16 }}>
           <Card.Content>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  mode="outlined"
-                  label="Token"
-                  placeholder="Enter token number"
-                  value={tokenInput}
-                  onChangeText={(t) => setTokenInput(t)}
-                  right={<TextInput.Icon icon="content-paste" onPress={handlePaste} />}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              <IconButton icon="qrcode-scan" onPress={handleOpenScanner} style={{ marginLeft: 8 }} />
-            </View>
+           <View style={{ position: 'relative' }}>
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <View style={{ flex: 1 }}>
+      <TextInput
+        ref={inputRef}
+        mode="outlined"
+        label="Token"
+        placeholder="Enter token number"
+        value={tokenInput}
+        onChangeText={setTokenInput}
+        onFocus={() => tokenInput && setShowDropdown(true)}
+        right={<TextInput.Icon icon="content-paste" onPress={handlePaste} />}
+        autoCapitalize="none"
+        autoCorrect={false}
+        onBlur={() => setTimeout(() => setShowDropdown(false), 150)} // tiny delay for click
+      />
+    </View>
+    <IconButton icon="qrcode-scan" onPress={handleOpenScanner} style={{ marginLeft: 8 }} />
+  </View>
+
+  {/* ----- SIMPLE INLINE RESULTS BOX ----- */}
+  {showDropdown && (
+    <View
+      style={{
+        marginTop: 6,
+        borderWidth: 0,
+        // borderColor: '#e3e3e3',
+        // backgroundColor: 'white',
+        borderRadius: 8,
+        maxHeight: 220,
+        overflow: 'hidden',
+      }}
+    >
+      {tokenInput.trim().length < 2 ? (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+          <Text style={{ color: '#666' }}>Type at least 2 characters…</Text>
+        </View>
+      ) : searchResults.length === 0 ? (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+          <Text style={{ color: '#666' }}>No results</Text>
+        </View>
+      ) : (
+        <ScrollView keyboardShouldPersistTaps="always" style={{ maxHeight: 220 }}>
+          {searchResults.map((item) => (
+            <TouchableOpacity
+              key={item}
+              style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+              onPress={() => {
+                setTokenInput(item);
+                setShowDropdown(false);
+              }}
+            >
+              <Text style={{ fontSize: 15 }}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  )}
+</View>
             {!!error && <HelperText type="error" visible>{error}</HelperText>}
             <Button mode="contained" onPress={handleLookup} loading={lookupLoading} style={{ marginTop: 8 }}>
               Fetch Token Details
@@ -241,7 +320,7 @@ useEffect(() => {
             </Card.Content>
           </Card>
         )}
-      </View>
+      </ScrollView>
 
       <Portal>
         <PaperModal visible={productPickerVisible} onDismiss={() => setProductPickerVisible(false)} contentContainerStyle={{ marginHorizontal: 16, backgroundColor: 'white', borderRadius: 16, maxHeight: '80%' }}>

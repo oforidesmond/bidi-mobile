@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { getAttendantSales } from '@/api/attendant';
+import { useAuth } from '@/context/AuthContext';
+import { Transaction } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { ActivityIndicator, Card, Divider, List, Text, useTheme } from 'react-native-paper';
-import { useAuth } from '@/context/AuthContext';
-import { getAttendantSales } from '@/api/attendant';
-import { Transaction } from '@/types';
 
 export default function SalesScreen() {
   const theme = useTheme();
@@ -76,7 +76,7 @@ export default function SalesScreen() {
                 left={(props) => <List.Icon {...props} icon="gas-station" />}
                 right={() => (
                   <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                    <Text style={{ fontWeight: '600' }}>{item.product?.type || 'Product'}</Text>
+                    <Text style={{ fontWeight: '600' }}>{item.productCatalog?.name || item.product?.type || 'Product'}</Text>
                     <Text style={{ color: theme.colors.outline }}>{item.token ? `${item.token.slice(0,4)}...${item.token.slice(-4)}` : ''}</Text>
                   </View>
                 )}

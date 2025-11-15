@@ -153,8 +153,8 @@ export default function Tokens() {
         mode="flat"
         textStyle={{ fontSize: 11, fontWeight: '600' }}
         style={{
-          backgroundColor: isUsed ? '#ffebee' : '#3b8b42ff',
-          borderColor: isUsed ? '#e57373' : '#81c784',
+          backgroundColor: isUsed ? '#c05767ff' : '#3b8b42ff',
+          borderColor: isUsed ? '#b13636ff' : '#81c784',
           marginRight: 8,
         }}
         disabled={isUsed}

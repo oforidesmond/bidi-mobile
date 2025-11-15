@@ -40,8 +40,8 @@ export default function BuyFuelTokenScreen() {
   const isValidMobile = mobileNumber.length >= 10;
 
   const handleBuy = async () => {
-    if (!isValidAmount || !isValidMobile) {
-      Alert.alert('Invalid Input', 'Please check amount and mobile number');
+    if (!isValidAmount) {
+      Alert.alert('Invalid Input', 'Please check amount');
       return;
     }
 
@@ -49,8 +49,8 @@ export default function BuyFuelTokenScreen() {
     try {
       await buyFuelToken({
         amount: Number(amount),
-        mobileNumber,
       });
+
       Alert.alert('Success', 'Fuel token purchased successfully!');
       setAmount('');
       router.push('/tokens');
@@ -110,7 +110,7 @@ export default function BuyFuelTokenScreen() {
               <Button
                 mode="contained"
                 onPress={handleBuy}
-                disabled={loading || !isValidAmount || !isValidMobile}
+                disabled={loading || !isValidAmount}
                 loading={loading}
                 contentStyle={{ height: 54 }}
                 labelStyle={{ fontSize: 16, fontWeight: '600' }}
