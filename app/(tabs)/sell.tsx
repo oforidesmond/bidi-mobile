@@ -1,6 +1,7 @@
 import { calculateLiters, getAvailableProducts, getProducts, getTokenDetails, searchTokens, sellFuel } from '@/api/attendant';
 import { useAuth } from '@/context/AuthContext';
 import { Transaction } from '@/types';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
@@ -10,12 +11,13 @@ import { Button, Card, Divider, HelperText, IconButton, List, Modal as PaperModa
 export default function SellFuelScreen() {
   const theme = useTheme();
   const { user } = useAuth();
+  const [permission, requestPermission] = useCameraPermissions();
   const [tokenInput, setTokenInput] = useState('');
   const [productPickerVisible, setProductPickerVisible] = useState(false);
   const [pumpPickerVisible, setPumpPickerVisible] = useState(false);
   const [scanVisible, setScanVisible] = useState(false);
   const [cameraGranted, setCameraGranted] = useState<boolean | null>(null);
-  const [Scanner, setScanner] = useState<any>(null);
+  
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedPump, setSelectedPump] = useState<{ id: number; pumpNumber: number; dispenserId: number } | null>(null);
@@ -33,6 +35,7 @@ export default function SellFuelScreen() {
   const [showDropdown, setShowDropdown] = useState(false);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<any>(null);
+  const hasScannedRef = useRef(false);
   
 
   const handlePaste = async () => {
@@ -42,14 +45,18 @@ export default function SellFuelScreen() {
 
   const handleOpenScanner = async () => {
     try {
-      const mod = await import('expo-barcode-scanner');
-      const { status } = await mod.BarCodeScanner.requestPermissionsAsync();
-      setCameraGranted(status === 'granted');
-      setScanner(() => mod.BarCodeScanner);
+      // If we already have permission, don't re-prompt
+      if (!permission?.granted) {
+        const res = await requestPermission();
+        setCameraGranted(!!res?.granted);
+      } else {
+        setCameraGranted(true);
+      }
     } catch (e) {
       setCameraGranted(false);
-      setSnackbar('Scanner module not available. Please install expo-barcode-scanner.');
+      setSnackbar('Scanner permission failed.');
     } finally {
+      hasScannedRef.current = false;
       setScanVisible(true);
     }
   };
@@ -389,21 +396,21 @@ useEffect(() => {
         >
           <View style={{ width: '88%', height: 360, overflow: 'hidden', borderRadius: 16 }}>
             {cameraGranted === true ? (
-              Scanner ? (
-                <Scanner
-                  style={{ flex: 1 }}
-                  onBarCodeScanned={({ data }: any) => {
-                    if (data) {
-                      setTokenInput(String(data));
-                      setScanVisible(false);
-                    }
-                  }}
-                />
-              ) : (
-                <View style={{ flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={{ color: 'white' }}>Scanner not available</Text>
-                </View>
-              )
+              <CameraView
+                style={{ flex: 1 }}
+                facing="back"
+                barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+                onBarcodeScanned={({ data }: any) => {
+                  if (!hasScannedRef.current && data) {
+                    hasScannedRef.current = true;
+                    setTokenInput(String(data));
+                    setScanVisible(false);
+                    setTimeout(() => {
+                      handleLookup();
+                    }, 0);
+                  }
+                }}
+              />
             ) : cameraGranted === false ? (
               <View style={{ flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={{ color: 'white' }}>Camera permission denied</Text>

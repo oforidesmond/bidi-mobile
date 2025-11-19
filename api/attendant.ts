@@ -9,7 +9,7 @@ export const sellFuel = async (
     stationId: number;
   },
 ) => {
-  const response = await api.patch(`/transactions/${token}`, data);
+  const response = await api.patch(`/transactions/token/${token}`, data);
   return response.data;
 };
 
